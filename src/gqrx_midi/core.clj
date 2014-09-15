@@ -2,7 +2,7 @@
   (:require [aleph.tcp :refer :all]
             [lamina.core :refer :all]
             [gloss.core :refer :all]
-            [overtone.live :refer :all]))
+            [overtone.live :as live]))
 
 (def ch
   (wait-for-result
@@ -11,14 +11,30 @@
                  :frame (string :utf-8 :delimiters ["\r\n"])})))
 
 (defn set-frequency [freq]
-  (enqueue ch (str "F" freq)))
+  (enqueue ch (str "F" freq))
+  (println "Freq:" freq))
 
-(defn midi-to-freq [note]
-  (let [freq (* 280000 note)]
-    (set-frequency freq)
-    (println "Note:" note " Freq:" freq)))
+(def midi-min 36)
+(def midi-max 84)
+(def hackrf-min-freq 10e6)
+(def hackrf-max-freq 6e9)
 
-  (overtone.live/on-event [:midi :note-on]
-            (fn [{note :note velocity :velocity}]
-              (midi-to-freq note))
-            ::note-handler)
+(defn percentage-in-range [val minimum maximum]
+  (let [top    (- val minimum)
+        bottom (- maximum minimum)]
+    (/ top bottom)))
+
+(defn map-midi-to-freq [note min-freq max-freq]
+  (float
+    (+ min-freq
+       (* (percentage-in-range note midi-min midi-max)
+          (- max-freq min-freq)))))
+
+(live/on-event [:midi :note-on]
+  (fn [{note :note velocity :velocity}]
+    (set-frequency
+      (map-midi-to-freq
+         note
+         hackrf-min-freq
+         hackrf-max-freq)))
+  ::note-handler)
