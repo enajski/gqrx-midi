@@ -11,13 +11,14 @@
                  :frame (string :utf-8 :delimiters ["\r\n"])})))
 
 (defn set-frequency [freq]
-  (enqueue ch (str "F" freq))
+  (enqueue ch
+    (str "F" (long freq)))
   (println "Freq:" freq))
 
 (def midi-min 36)
 (def midi-max 84)
-(def hackrf-min-freq 10e6)
-(def hackrf-max-freq 6e9)
+(def hackrf-min-freq   10000000)
+(def hackrf-max-freq 6000000000)
 
 (defn percentage-in-range [val minimum maximum]
   (let [top    (- val minimum)
